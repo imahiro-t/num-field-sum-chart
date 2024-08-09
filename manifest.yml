@@ -1,0 +1,26 @@
+modules:
+  jira:dashboardGadget:
+    - key: num-field-sum-chart
+      title: NumFieldSumChart
+      description: Sum up any numeric value like story points in project and output monthly report on dashboard.
+      thumbnail: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+      resource: main-resource
+      render: native
+      resolver:
+        function: resolver
+      edit:
+        resource: main-resource
+        render: native
+  function:
+    - key: resolver
+      handler: index.handler
+resources:
+  - key: main-resource
+    path: src/frontend/index.jsx
+app:
+  runtime:
+    name: nodejs18.x
+  id: ari:cloud:ecosystem::app/69aada3b-b98f-49b5-80e3-ed87242836dd
+permissions:
+  scopes:
+    - read:jira-work
