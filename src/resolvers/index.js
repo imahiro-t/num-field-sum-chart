@@ -3,10 +3,6 @@ import api, { route } from "@forge/api";
 
 const resolver = new Resolver();
 
-resolver.define("getText", (req) => {
-  return "Hello, world!";
-});
-
 resolver.define("getRecentProjects", async (req) => {
   const response = await api
     .asUser()
@@ -53,7 +49,7 @@ resolver.define("getCustomNumberFields", async (req) => {
 });
 
 resolver.define("searchIssues", async (req) => {
-  const { project, issueType, numberField } = req.payload;
+  const { project, issueType, numberField, reportType } = req.payload;
   const inc = "-12M";
 
   const jql = issueType
@@ -83,19 +79,32 @@ resolver.define("searchIssues", async (req) => {
     body: bodyData,
   });
 
-  return createResponseValue(await response.json(), numberField, issueType);
+  return createResponseValue(
+    await response.json(),
+    numberField,
+    issueType,
+    reportType
+  );
 });
 
-const createResponseValue = (json, numberField, issueType) => {
-  const store = initYearMonthStore(issueTypes(json, issueType));
+const createResponseValue = (json, numberField, issueType, reportType) => {
+  const store =
+    reportType === "weekly"
+      ? initWeeklyStore(issueTypes(json, issueType))
+      : initMonthlyStore(issueTypes(json, issueType));
   json?.issues?.forEach((issue) => {
     const value = issue.fields[`customfield_${numberField}`];
     const resolutionDate = issue.fields.resolutiondate;
-    const term = createMonthTermKey(new Date(resolutionDate));
+    const term =
+      reportType === "weekly"
+        ? createWeeklyTermKey(new Date(resolutionDate))
+        : createMonthlyTermKey(new Date(resolutionDate));
     const issueType = issue.fields.issuetype.name;
     const key = `${term}-${issueType}`;
-    store[key].count++;
-    store[key].sum += value;
+    if (store[key]) {
+      store[key].count++;
+      store[key].sum += value;
+    }
   });
   return Object.keys(store)
     .sort()
@@ -110,11 +119,33 @@ const issueTypes = (json, issueType) => {
   return ret == [] ? [issueType] : ret;
 };
 
-const initYearMonthStore = (issueTypes) => {
+const createMonthlyTermKey = (date) => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  return `${year}-${month}`;
+};
+
+const createWeeklyTermKey = (date) => {
+  // shift to Monday
+  if (date.getDay() === 0) {
+    date.setDate(date.getDate() - 6);
+  } else if (date.getDay() > 1) {
+    date.setDate(date.getDate() - date.getDay() + 1);
+  }
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const initMonthlyStore = (issueTypes) => {
   const store = {};
   const date = new Date();
-  for (let i = 0; i <= 12; i++) {
-    const term = createMonthTermKey(date);
+  date.setHours(0, 0, 0, 0);
+  const oneYearAgo = new Date(date);
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  while (date >= oneYearAgo) {
+    const term = createMonthlyTermKey(date);
     issueTypes.forEach((issueType) => {
       const key = `${term}-${issueType}`;
       store[key] = { term: term, count: 0, sum: 0, issueType: issueType };
@@ -124,10 +155,21 @@ const initYearMonthStore = (issueTypes) => {
   return store;
 };
 
-const createMonthTermKey = (date) => {
-  const year = date.getFullYear();
-  const month = (date.getMonth() + 1).toString().padStart(2, "0");
-  return `${year}-${month}`;
+const initWeeklyStore = (issueTypes) => {
+  const store = {};
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  const oneYearAgo = new Date(date);
+  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+  while (date >= oneYearAgo) {
+    const term = createWeeklyTermKey(date);
+    issueTypes.forEach((issueType) => {
+      const key = `${term}-${issueType}`;
+      store[key] = { term: term, count: 0, sum: 0, issueType: issueType };
+    });
+    date.setDate(date.getDate() - 7);
+  }
+  return store;
 };
 
 export const handler = resolver.getDefinitions();
