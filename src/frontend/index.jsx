@@ -86,16 +86,16 @@ export const Edit = (props) => {
     },
   });
 
-  const configureGadget = (data) => {
+  const handleSave = (data) => {
     view.submit(data);
   };
 
-  const close = (data) => {
+  const handleCancel = (data) => {
     view.close(data);
   };
 
   return (
-    <Form onSubmit={handleSubmit(configureGadget)}>
+    <Form onSubmit={handleSubmit(handleSave)}>
       <FormSection>
         <Box>
           <Label labelFor={getFieldId(FIELD_NAME_PROJECT)}>
@@ -170,7 +170,7 @@ export const Edit = (props) => {
         </Box>
       </FormSection>
       <FormFooter>
-        <Button onClick={close} appearance="subtle">
+        <Button onClick={handleCancel} appearance="subtle">
           Cancel
         </Button>
         <Button appearance="primary" type="submit">
