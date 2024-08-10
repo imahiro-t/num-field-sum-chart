@@ -1,5 +1,6 @@
 import Resolver from "@forge/resolver";
 import api, { route } from "@forge/api";
+import { REPORT_TYPE } from "../const";
 
 const resolver = new Resolver();
 
@@ -111,14 +112,14 @@ const createResponseValue = (
   dateTo
 ) => {
   const store =
-    reportType === "weekly"
+    reportType === REPORT_TYPE.WEEKLY
       ? initWeeklyStore(issueTypes(json, issueType), dateFrom, dateTo)
       : initMonthlyStore(issueTypes(json, issueType), dateFrom, dateTo);
   json?.issues?.forEach((issue) => {
     const value = issue.fields[`customfield_${numberField}`];
     const resolutionDate = issue.fields.resolutiondate;
     const term =
-      reportType === "weekly"
+      reportType === REPORT_TYPE.WEEKLY
         ? createWeeklyTermKey(new Date(resolutionDate))
         : createMonthlyTermKey(new Date(resolutionDate));
     const issueType = issue.fields.issuetype.name;
