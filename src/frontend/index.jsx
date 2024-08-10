@@ -13,15 +13,19 @@ import ForgeReconciler, {
   LineChart,
   DynamicTable,
   RadioGroup,
+  DatePicker,
 } from "@forge/react";
 import { invoke, view } from "@forge/bridge";
 const FIELD_NAME_PROJECT = "project";
 const FIELD_NAME_ISSUE_TYPE = "issue-type";
 const FIELD_NAME_NUMBER_FIELD = "number-field";
 const FIELD_NAME_REPORT_TYPE = "report-type";
+const FIELD_NAME_DATE_FROM = "date-from";
+const FIELD_NAME_DATE_TO = "date-to";
 
 export const Edit = (props) => {
-  const { project, issueType, numberField, reportType } = props;
+  const { project, issueType, numberField, reportType, dateFrom, dateTo } =
+    props;
   const [projectResponseJson, setProjectResponseJson] = useState();
   const [issueTypeResponseJson, setIssueTypeResponseJson] = useState();
   const [numberFieldResponseJson, setNumberFieldResponseJson] = useState();
@@ -63,6 +67,8 @@ export const Edit = (props) => {
       issueType: issueType,
       numberField: numberField,
       reportType: reportType,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
     },
   });
 
@@ -110,15 +116,28 @@ export const Edit = (props) => {
           options={numberFieldOptions}
           defaultValue={numberField}
         />
-        <Label labelFor={getFieldId(FIELD_NAME_REPORT_TYPE)}>
-          Report Type
-          <RequiredAsterisk />
-        </Label>
+        <Label labelFor={getFieldId(FIELD_NAME_REPORT_TYPE)}>Report Type</Label>
         <RadioGroup
           {...register(FIELD_NAME_REPORT_TYPE, {})}
           name="reportType"
           options={reportTypeOptions}
           defaultValue={reportType}
+        />
+        <Label labelFor={getFieldId(FIELD_NAME_DATE_FROM)}>From</Label>
+        <DatePicker
+          {...register(FIELD_NAME_DATE_FROM, {})}
+          name="dateFrom"
+          defaultValue={dateFrom}
+          weekStartDay={1}
+          dateFormat="YYYY-MM-DD"
+        />
+        <Label labelFor={getFieldId(FIELD_NAME_DATE_TO)}>To</Label>
+        <DatePicker
+          {...register(FIELD_NAME_DATE_TO, {})}
+          name="dateTo"
+          defaultValue={dateTo}
+          weekStartDay={1}
+          dateFormat="YYYY-MM-DD"
         />
       </FormSection>
       <FormFooter>
@@ -136,7 +155,8 @@ export const Edit = (props) => {
 
 const View = (props) => {
   const [issueResponseJson, setIssueResponseJson] = useState();
-  const { project, issueType, numberField, reportType } = props;
+  const { project, issueType, numberField, reportType, dateFrom, dateTo } =
+    props;
 
   useEffect(() => {
     if (project && issueType && numberField) {
@@ -145,6 +165,8 @@ const View = (props) => {
         issueType: issueType.value,
         numberField: numberField.value,
         reportType: reportType,
+        dateFromStr: dateFrom,
+        dateToStr: dateTo,
       }).then(setIssueResponseJson);
     }
   }, []);
@@ -247,6 +269,23 @@ const head = {
   ],
 };
 
+const createFromDefaultValue = () => {
+  const date = new Date();
+  date.setFullYear(date.getFullYear() - 1);
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
+const createToDefaultValue = () => {
+  const date = new Date();
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const App = () => {
   const context = useProductContext();
   if (!context) {
@@ -258,7 +297,11 @@ const App = () => {
   const project = gadgetConfiguration[FIELD_NAME_PROJECT];
   const issueType = gadgetConfiguration[FIELD_NAME_ISSUE_TYPE];
   const numberField = gadgetConfiguration[FIELD_NAME_NUMBER_FIELD];
-  const reportType = gadgetConfiguration[FIELD_NAME_REPORT_TYPE];
+  const reportType = gadgetConfiguration[FIELD_NAME_REPORT_TYPE] ?? "monthly";
+  const dateFrom =
+    gadgetConfiguration[FIELD_NAME_DATE_FROM] ?? createFromDefaultValue();
+  const dateTo =
+    gadgetConfiguration[FIELD_NAME_DATE_TO] ?? createToDefaultValue();
 
   return context.extension.entryPoint === "edit" ? (
     <Edit
@@ -266,6 +309,8 @@ const App = () => {
       issueType={issueType}
       numberField={numberField}
       reportType={reportType}
+      dateFrom={dateFrom}
+      dateTo={dateTo}
     />
   ) : (
     <View
@@ -273,6 +318,8 @@ const App = () => {
       issueType={issueType}
       numberField={numberField}
       reportType={reportType}
+      dateFrom={dateFrom}
+      dateTo={dateTo}
     />
   );
 };

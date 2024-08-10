@@ -49,12 +49,25 @@ resolver.define("getCustomNumberFields", async (req) => {
 });
 
 resolver.define("searchIssues", async (req) => {
-  const { project, issueType, numberField, reportType } = req.payload;
-  const inc = "-12M";
+  const {
+    project,
+    issueType,
+    numberField,
+    reportType,
+    dateFromStr,
+    dateToStr,
+  } = req.payload;
+
+  const dateFrom = new Date(dateFromStr);
+  const dateTo = new Date(dateToStr);
 
   const jql = issueType
-    ? `project = ${project} and issueType = ${issueType} and cf[${numberField}] >= 0 and resolutiondate >= startOfMonth(${inc})`
-    : `project = ${project} and cf[${numberField}] >= 0 and resolutiondate >= startOfMonth(${inc})`;
+    ? `project = ${project} and issueType = ${issueType} and cf[${numberField}] >= 0 and resolutiondate >= ${createTermCondition(
+        dateFrom
+      )} and resolutiondate < ${createTermCondition(dateTo)}`
+    : `project = ${project} and cf[${numberField}] >= 0 and resolutiondate >= ${createTermCondition(
+        dateFrom
+      )} and resolutiondate < ${createTermCondition(dateTo)}`;
 
   var bodyData = `{
     "expand": [
@@ -83,15 +96,24 @@ resolver.define("searchIssues", async (req) => {
     await response.json(),
     numberField,
     issueType,
-    reportType
+    reportType,
+    dateFrom,
+    dateTo
   );
 });
 
-const createResponseValue = (json, numberField, issueType, reportType) => {
+const createResponseValue = (
+  json,
+  numberField,
+  issueType,
+  reportType,
+  dateFrom,
+  dateTo
+) => {
   const store =
     reportType === "weekly"
-      ? initWeeklyStore(issueTypes(json, issueType))
-      : initMonthlyStore(issueTypes(json, issueType));
+      ? initWeeklyStore(issueTypes(json, issueType), dateFrom, dateTo)
+      : initMonthlyStore(issueTypes(json, issueType), dateFrom, dateTo);
   json?.issues?.forEach((issue) => {
     const value = issue.fields[`customfield_${numberField}`];
     const resolutionDate = issue.fields.resolutiondate;
@@ -119,6 +141,13 @@ const issueTypes = (json, issueType) => {
   return ret == [] ? [issueType] : ret;
 };
 
+const createTermCondition = (date) => {
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, "0");
+  const day = date.getDate().toString().padStart(2, "0");
+  return `${year}-${month}-${day}`;
+};
+
 const createMonthlyTermKey = (date) => {
   const year = date.getFullYear();
   const month = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -138,36 +167,33 @@ const createWeeklyTermKey = (date) => {
   return `${year}-${month}-${day}`;
 };
 
-const initMonthlyStore = (issueTypes) => {
+const initMonthlyStore = (issueTypes, dateFrom, dateTo) => {
   const store = {};
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  const oneYearAgo = new Date(date);
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-  while (date >= oneYearAgo) {
-    const term = createMonthlyTermKey(date);
+  dateFrom.setHours(0, 0, 0, 0);
+  dateTo.setHours(0, 0, 0, 0);
+  while (dateTo >= dateFrom) {
+    const term = createMonthlyTermKey(dateTo);
     issueTypes.forEach((issueType) => {
       const key = `${term}-${issueType}`;
       store[key] = { term: term, count: 0, sum: 0, issueType: issueType };
     });
-    date.setMonth(date.getMonth() - 1);
+    dateTo.setMonth(dateTo.getMonth() - 1);
   }
   return store;
 };
 
-const initWeeklyStore = (issueTypes) => {
+const initWeeklyStore = (issueTypes, dateFrom, dateTo) => {
   const store = {};
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  const oneYearAgo = new Date(date);
-  oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
-  while (date >= oneYearAgo) {
-    const term = createWeeklyTermKey(date);
+  dateFrom.setHours(0, 0, 0, 0);
+  dateTo.setHours(0, 0, 0, 0);
+  dateFrom.setDate(dateFrom.getDate() - 6);
+  while (dateTo >= dateFrom) {
+    const term = createWeeklyTermKey(dateTo);
     issueTypes.forEach((issueType) => {
       const key = `${term}-${issueType}`;
       store[key] = { term: term, count: 0, sum: 0, issueType: issueType };
     });
-    date.setDate(date.getDate() - 7);
+    dateTo.setDate(dateTo.getDate() - 7);
   }
   return store;
 };
