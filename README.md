@@ -11,6 +11,10 @@ Sum up any numeric value like story points in project and output monthly or week
 
 ## Release Notes
 
+### 0.0.3
+
+- ✨ Can choose term type
+
 ### 0.0.2
 
 - ✨ Can select not only monthly report but also weekly report
