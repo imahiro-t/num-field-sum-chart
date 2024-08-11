@@ -17,13 +17,13 @@ import ForgeReconciler, {
 } from "@forge/react";
 import { invoke, view } from "@forge/bridge";
 import { REPORT_TYPE, TERM_TYPE } from "../const";
-const FIELD_NAME_PROJECT = "project";
-const FIELD_NAME_ISSUE_TYPE = "issue-type";
-const FIELD_NAME_NUMBER_FIELD = "number-field";
-const FIELD_NAME_REPORT_TYPE = "report-type";
-const FIELD_NAME_TERM_TYPE = "term-type";
-const FIELD_NAME_DATE_FROM = "date-from";
-const FIELD_NAME_DATE_TO = "date-to";
+const FIELD_NAME_PROJECT = "FIELD_NAME_PROJECT";
+const FIELD_NAME_ISSUE_TYPE = "FIELD_NAME_ISSUE_TYPE";
+const FIELD_NAME_NUMBER_FIELD = "FIELD_NAME_NUMBER_FIELD";
+const FIELD_NAME_REPORT_TYPE = "FIELD_NAME_REPORT_TYPE";
+const FIELD_NAME_TERM_TYPE = "FIELD_NAME_TERM_TYPE";
+const FIELD_NAME_DATE_FROM = "FIELD_NAME_DATE_FROM";
+const FIELD_NAME_DATE_TO = "FIELD_NAME_DATE_TO";
 
 export const Edit = (props) => {
   const {
@@ -38,10 +38,18 @@ export const Edit = (props) => {
   const [projectResponseJson, setProjectResponseJson] = useState();
   const [issueTypeResponseJson, setIssueTypeResponseJson] = useState();
   const [numberFieldResponseJson, setNumberFieldResponseJson] = useState();
+  const [selectedProject, setSelectedProject] = useState(project);
+  const [selectedIssueType, setSelectedIssueType] = useState(issueType);
+  const [selectedNumberField, setSelectedNumberField] = useState(numberField);
+  const [selectedTermType, setSelectedTermType] = useState(termType);
 
   useEffect(() => {
     invoke("getRecentProjects", {}).then(setProjectResponseJson);
-    invoke("getIssueTypes", {}).then(setIssueTypeResponseJson);
+    if (project) {
+      invoke("getProjectIssueTypes", { projectId: project.value }).then(
+        setIssueTypeResponseJson
+      );
+    }
     invoke("getCustomNumberFields", {}).then(setNumberFieldResponseJson);
   }, []);
 
@@ -86,12 +94,43 @@ export const Edit = (props) => {
     },
   });
 
-  const handleSave = (data) => {
+  const handleSave = async (data) => {
+    if (!data[FIELD_NAME_PROJECT]) {
+      data[FIELD_NAME_PROJECT] = selectedProject;
+    }
+    if (!data[FIELD_NAME_ISSUE_TYPE]) {
+      data[FIELD_NAME_ISSUE_TYPE] = selectedIssueType;
+    }
+    if (!data[FIELD_NAME_NUMBER_FIELD]) {
+      data[FIELD_NAME_NUMBER_FIELD] = selectedNumberField;
+    }
+    if (!data[FIELD_NAME_TERM_TYPE]) {
+      data[FIELD_NAME_TERM_TYPE] = selectedTermType;
+    }
     view.submit(data);
   };
 
-  const handleCancel = (data) => {
-    view.close(data);
+  const handleCancel = () => {
+    view.close();
+  };
+
+  const handleProjectChange = (data) => {
+    setSelectedProject(data);
+    invoke("getProjectIssueTypes", { projectId: data.value }).then(
+      setIssueTypeResponseJson
+    );
+  };
+
+  const handleIssueTypeChange = (data) => {
+    setSelectedIssueType(data);
+  };
+
+  const handleNumberFieldChange = (data) => {
+    setSelectedNumberField(data);
+  };
+
+  const handleTermTypeChange = (data) => {
+    setSelectedTermType(data.target.value);
   };
 
   return (
@@ -105,9 +144,10 @@ export const Edit = (props) => {
           <Select
             {...register(FIELD_NAME_PROJECT, {})}
             appearance="default"
-            name="project"
+            name={FIELD_NAME_PROJECT}
             options={projectOptions}
             defaultValue={project}
+            onChange={handleProjectChange}
           />
           <Label labelFor={getFieldId(FIELD_NAME_ISSUE_TYPE)}>
             Issue Type
@@ -116,9 +156,10 @@ export const Edit = (props) => {
           <Select
             {...register(FIELD_NAME_ISSUE_TYPE, {})}
             appearance="default"
-            name="issueType"
+            name={FIELD_NAME_ISSUE_TYPE}
             options={issueTypeOptions}
             defaultValue={issueType}
+            onChange={handleIssueTypeChange}
           />
           <Label labelFor={getFieldId(FIELD_NAME_NUMBER_FIELD)}>
             Number Field for Chart
@@ -127,9 +168,10 @@ export const Edit = (props) => {
           <Select
             {...register(FIELD_NAME_NUMBER_FIELD, {})}
             appearance="default"
-            name="numberField"
+            name={FIELD_NAME_NUMBER_FIELD}
             options={numberFieldOptions}
             defaultValue={numberField}
+            onChange={handleNumberFieldChange}
           />
         </Box>
         <Box>
@@ -138,7 +180,7 @@ export const Edit = (props) => {
           </Label>
           <RadioGroup
             {...register(FIELD_NAME_REPORT_TYPE, {})}
-            name="reportType"
+            name={FIELD_NAME_REPORT_TYPE}
             options={reportTypeOptions}
             defaultValue={reportType}
           />
@@ -147,25 +189,28 @@ export const Edit = (props) => {
           <Label labelFor={getFieldId(FIELD_NAME_TERM_TYPE)}>Term Type</Label>
           <RadioGroup
             {...register(FIELD_NAME_TERM_TYPE, {})}
-            name="termType"
+            name={FIELD_NAME_TERM_TYPE}
             options={termTypeOptions}
             defaultValue={termType}
+            onChange={handleTermTypeChange}
           />
           <Label labelFor={getFieldId(FIELD_NAME_DATE_FROM)}>From</Label>
           <DatePicker
             {...register(FIELD_NAME_DATE_FROM, {})}
-            name="dateFrom"
+            name={FIELD_NAME_DATE_FROM}
             defaultValue={dateFrom}
             weekStartDay={1}
             dateFormat="YYYY-MM-DD"
+            isDisabled={selectedTermType !== TERM_TYPE.DATE_RANGE}
           />
           <Label labelFor={getFieldId(FIELD_NAME_DATE_TO)}>To</Label>
           <DatePicker
             {...register(FIELD_NAME_DATE_TO, {})}
-            name="dateTo"
+            name={FIELD_NAME_DATE_TO}
             defaultValue={dateTo}
             weekStartDay={1}
             dateFormat="YYYY-MM-DD"
+            isDisabled={selectedTermType !== TERM_TYPE.DATE_RANGE}
           />
         </Box>
       </FormSection>
@@ -173,7 +218,13 @@ export const Edit = (props) => {
         <Button onClick={handleCancel} appearance="subtle">
           Cancel
         </Button>
-        <Button appearance="primary" type="submit">
+        <Button
+          appearance="primary"
+          type="submit"
+          isDisabled={
+            !(selectedProject && selectedIssueType && selectedNumberField)
+          }
+        >
           Save
         </Button>
       </FormFooter>
