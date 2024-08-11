@@ -11,6 +11,10 @@ Sum up any numeric value like story points in project and output monthly or week
 
 ## Release Notes
 
+### 0.0.4
+
+- 💄 Can select issue type in project and disable unrelated component
+
 ### 0.0.3
 
 - ✨ Can choose term type
