@@ -4,6 +4,15 @@ import { REPORT_TYPE } from "../const";
 
 const resolver = new Resolver();
 
+const clauseName = (id) => {
+  const CUSTOM_FIELD_PREFIX = "customfield_";
+  if (id.startsWith(CUSTOM_FIELD_PREFIX)) {
+    return `cf[${id.slice(CUSTOM_FIELD_PREFIX.length)}]`;
+  } else {
+    return id;
+  }
+};
+
 resolver.define("getRecentProjects", async (req) => {
   const response = await api
     .asUser()
@@ -38,14 +47,25 @@ resolver.define("getProjectIssueTypes", async (req) => {
   return await response.json();
 });
 
-resolver.define("getCustomNumberFields", async (req) => {
+resolver.define("getNumberFields", async (req) => {
   const response = await api.asUser().requestJira(route`/rest/api/3/field`, {
     headers: {
       Accept: "application/json",
     },
   });
   return (await response.json()).filter(
-    (field) => field.custom && field.schema && field.schema.type === "number"
+    (field) => field.schema && field.schema.type === "number"
+  );
+});
+
+resolver.define("getDateTimeFields", async (req) => {
+  const response = await api.asUser().requestJira(route`/rest/api/3/field`, {
+    headers: {
+      Accept: "application/json",
+    },
+  });
+  return (await response.json()).filter(
+    (field) => field.schema && field.schema.type === "datetime"
   );
 });
 
@@ -54,6 +74,7 @@ resolver.define("searchIssues", async (req) => {
     project,
     issueType,
     numberField,
+    dateTimeField,
     reportType,
     dateFromStr,
     dateToStr,
@@ -63,19 +84,23 @@ resolver.define("searchIssues", async (req) => {
   const dateTo = new Date(dateToStr);
 
   const jql = issueType
-    ? `project = ${project} and issueType = ${issueType} and cf[${numberField}] >= 0 and resolutiondate >= ${createTermCondition(
+    ? `project = ${project} and issueType = ${issueType} and ${clauseName(
+        numberField
+      )} >= 0 and ${clauseName(dateTimeField)} >= ${createTermCondition(
         dateFrom
-      )} and resolutiondate < ${createTermCondition(dateTo)}`
-    : `project = ${project} and cf[${numberField}] >= 0 and resolutiondate >= ${createTermCondition(
+      )} and ${clauseName(dateTimeField)} < ${createTermCondition(dateTo)}`
+    : `project = ${project} and ${clauseName(
+        numberField
+      )} >= 0 and ${clauseName(dateTimeField)} >= ${createTermCondition(
         dateFrom
-      )} and resolutiondate < ${createTermCondition(dateTo)}`;
+      )} and ${clauseName(dateTimeField)} < ${createTermCondition(dateTo)}`;
 
   var bodyData = `{
     "expand": [
     ],
     "fields": [
-      "customfield_${numberField}",
-      "resolutiondate",
+      "${numberField}",
+      "${dateTimeField}",
       "issuetype"
     ],
     "fieldsByKeys": false,
@@ -96,6 +121,7 @@ resolver.define("searchIssues", async (req) => {
   return createResponseValue(
     await response.json(),
     numberField,
+    dateTimeField,
     issueType,
     reportType,
     dateFrom,
@@ -106,6 +132,7 @@ resolver.define("searchIssues", async (req) => {
 const createResponseValue = (
   json,
   numberField,
+  dateTimeField,
   issueType,
   reportType,
   dateFrom,
@@ -116,12 +143,13 @@ const createResponseValue = (
       ? initWeeklyStore(issueTypes(json, issueType), dateFrom, dateTo)
       : initMonthlyStore(issueTypes(json, issueType), dateFrom, dateTo);
   json?.issues?.forEach((issue) => {
-    const value = issue.fields[`customfield_${numberField}`];
-    const resolutionDate = issue.fields.resolutiondate;
+    const value = issue.fields[numberField];
+
+    const date = issue.fields[dateTimeField];
     const term =
       reportType === REPORT_TYPE.WEEKLY
-        ? createWeeklyTermKey(new Date(resolutionDate))
-        : createMonthlyTermKey(new Date(resolutionDate));
+        ? createWeeklyTermKey(new Date(date))
+        : createMonthlyTermKey(new Date(date));
     const issueType = issue.fields.issuetype.name;
     const key = `${term}-${issueType}`;
     if (store[key]) {

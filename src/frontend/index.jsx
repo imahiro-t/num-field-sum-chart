@@ -20,6 +20,7 @@ import { REPORT_TYPE, TERM_TYPE } from "../const";
 const FIELD_NAME_PROJECT = "FIELD_NAME_PROJECT";
 const FIELD_NAME_ISSUE_TYPE = "FIELD_NAME_ISSUE_TYPE";
 const FIELD_NAME_NUMBER_FIELD = "FIELD_NAME_NUMBER_FIELD";
+const FIELD_NAME_DATE_TIME_FIELD = "FIELD_NAME_DATE_TIME_FIELD";
 const FIELD_NAME_REPORT_TYPE = "FIELD_NAME_REPORT_TYPE";
 const FIELD_NAME_TERM_TYPE = "FIELD_NAME_TERM_TYPE";
 const FIELD_NAME_DATE_FROM = "FIELD_NAME_DATE_FROM";
@@ -30,6 +31,7 @@ export const Edit = (props) => {
     project,
     issueType,
     numberField,
+    dateTimeField,
     reportType,
     termType,
     dateFrom,
@@ -38,9 +40,12 @@ export const Edit = (props) => {
   const [projectResponseJson, setProjectResponseJson] = useState();
   const [issueTypeResponseJson, setIssueTypeResponseJson] = useState();
   const [numberFieldResponseJson, setNumberFieldResponseJson] = useState();
+  const [dateTimeFieldResponseJson, setDateTimeFieldResponseJson] = useState();
   const [selectedProject, setSelectedProject] = useState(project);
   const [selectedIssueType, setSelectedIssueType] = useState(issueType);
   const [selectedNumberField, setSelectedNumberField] = useState(numberField);
+  const [selectedDateTimeField, setSelectedDateTimeField] =
+    useState(dateTimeField);
   const [selectedTermType, setSelectedTermType] = useState(termType);
 
   useEffect(() => {
@@ -50,7 +55,8 @@ export const Edit = (props) => {
         setIssueTypeResponseJson
       );
     }
-    invoke("getCustomNumberFields", {}).then(setNumberFieldResponseJson);
+    invoke("getNumberFields", {}).then(setNumberFieldResponseJson);
+    invoke("getDateTimeFields", {}).then(setDateTimeFieldResponseJson);
   }, []);
 
   const projectOptions = projectResponseJson
@@ -70,7 +76,13 @@ export const Edit = (props) => {
   const numberFieldOptions = numberFieldResponseJson
     ? numberFieldResponseJson.map((numericField) => ({
         label: numericField.name,
-        value: numericField.schema.customId,
+        value: numericField.id,
+      }))
+    : [];
+  const dateTimeFieldOptions = dateTimeFieldResponseJson
+    ? dateTimeFieldResponseJson.map((dateTimeField) => ({
+        label: dateTimeField.name,
+        value: dateTimeField.id,
       }))
     : [];
   const reportTypeOptions = [
@@ -87,6 +99,7 @@ export const Edit = (props) => {
       project: project,
       issueType: issueType,
       numberField: numberField,
+      dateTimeField: dateTimeField,
       reportType: reportType,
       termType: termType,
       dateFrom: dateFrom,
@@ -103,6 +116,9 @@ export const Edit = (props) => {
     }
     if (!data[FIELD_NAME_NUMBER_FIELD]) {
       data[FIELD_NAME_NUMBER_FIELD] = selectedNumberField;
+    }
+    if (!data[FIELD_NAME_DATE_TIME_FIELD]) {
+      data[FIELD_NAME_DATE_TIME_FIELD] = selectedDateTimeField;
     }
     if (!data[FIELD_NAME_TERM_TYPE]) {
       data[FIELD_NAME_TERM_TYPE] = selectedTermType;
@@ -127,6 +143,10 @@ export const Edit = (props) => {
 
   const handleNumberFieldChange = (data) => {
     setSelectedNumberField(data);
+  };
+
+  const handleDateTimeFieldChange = (data) => {
+    setSelectedDateTimeField(data);
   };
 
   const handleTermTypeChange = (data) => {
@@ -162,7 +182,7 @@ export const Edit = (props) => {
             onChange={handleIssueTypeChange}
           />
           <Label labelFor={getFieldId(FIELD_NAME_NUMBER_FIELD)}>
-            Number Field for Chart
+            Target Number Field
             <RequiredAsterisk />
           </Label>
           <Select
@@ -175,6 +195,18 @@ export const Edit = (props) => {
           />
         </Box>
         <Box>
+          <Label labelFor={getFieldId(FIELD_NAME_DATE_TIME_FIELD)}>
+            Target Date Field
+            <RequiredAsterisk />
+          </Label>
+          <Select
+            {...register(FIELD_NAME_DATE_TIME_FIELD, {})}
+            appearance="default"
+            name={FIELD_NAME_DATE_TIME_FIELD}
+            options={dateTimeFieldOptions}
+            defaultValue={dateTimeField}
+            onChange={handleDateTimeFieldChange}
+          />
           <Label labelFor={getFieldId(FIELD_NAME_REPORT_TYPE)}>
             Report Type
           </Label>
@@ -222,7 +254,12 @@ export const Edit = (props) => {
           appearance="primary"
           type="submit"
           isDisabled={
-            !(selectedProject && selectedIssueType && selectedNumberField)
+            !(
+              selectedProject &&
+              selectedIssueType &&
+              selectedNumberField &&
+              selectedDateTimeField
+            )
           }
         >
           Save
@@ -239,6 +276,7 @@ const View = (props) => {
     project,
     issueType,
     numberField,
+    dateTimeField,
     reportType,
     termType,
     dateFrom,
@@ -250,11 +288,12 @@ const View = (props) => {
   oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
 
   useEffect(() => {
-    if (project && issueType && numberField) {
+    if (project && issueType && numberField && dateTimeField) {
       invoke("searchIssues", {
         project: project.value,
         issueType: issueType.value,
         numberField: numberField.value,
+        dateTimeField: dateTimeField.value,
         reportType: reportType,
         dateFromStr:
           termType === TERM_TYPE.PAST_YEAR ? formatDate(oneYearAgo) : dateFrom,
@@ -391,6 +430,7 @@ const App = () => {
   const project = gadgetConfiguration[FIELD_NAME_PROJECT];
   const issueType = gadgetConfiguration[FIELD_NAME_ISSUE_TYPE];
   const numberField = gadgetConfiguration[FIELD_NAME_NUMBER_FIELD];
+  const dateTimeField = gadgetConfiguration[FIELD_NAME_DATE_TIME_FIELD];
   const reportType =
     gadgetConfiguration[FIELD_NAME_REPORT_TYPE] ?? REPORT_TYPE.MONTHLY;
   const termType =
@@ -405,6 +445,7 @@ const App = () => {
       project={project}
       issueType={issueType}
       numberField={numberField}
+      dateTimeField={dateTimeField}
       reportType={reportType}
       termType={termType}
       dateFrom={dateFrom}
@@ -415,6 +456,7 @@ const App = () => {
       project={project}
       issueType={issueType}
       numberField={numberField}
+      dateTimeField={dateTimeField}
       reportType={reportType}
       termType={termType}
       dateFrom={dateFrom}
