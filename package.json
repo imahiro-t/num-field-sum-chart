@@ -1,6 +1,6 @@
 {
   "name": "num-field-sum-chart",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "main": "index.js",
   "license": "MIT",
   "private": true,

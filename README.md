@@ -11,6 +11,10 @@ Sum up any numeric value like story points in project and output monthly or week
 
 ## Release Notes
 
+### 0.0.6
+
+- ♻️ refactoring module
+
 ### 0.0.5
 
 - ✨ Can select target date field
