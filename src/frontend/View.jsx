@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { Box, LineChart, DynamicTable } from "@forge/react";
 import { invoke } from "@forge/bridge";
 import { TERM_TYPE } from "../const";
-import { formatDate } from "../util";
+import { formatDate } from "./util";
 
 const View = (props) => {
   const [issueResponseJson, setIssueResponseJson] = useState();

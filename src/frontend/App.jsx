@@ -13,7 +13,7 @@ import {
   FIELD_NAME_DATE_FROM,
   FIELD_NAME_DATE_TO,
 } from "./const";
-import { formatDate } from "../util";
+import { formatDate } from "./util";
 
 const App = () => {
   const context = useProductContext();
