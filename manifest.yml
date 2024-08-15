@@ -1,7 +1,7 @@
 modules:
   jira:dashboardGadget:
     - key: num-field-sum-chart
-      title: NumFieldSumChart
+      title: Num Field Sum Chart
       description: Sum up any numeric value like story points in project and output monthly report on dashboard.
       thumbnail: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
       resource: main-resource
