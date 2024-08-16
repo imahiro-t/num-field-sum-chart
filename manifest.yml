@@ -3,7 +3,7 @@ modules:
     - key: num-field-sum-chart
       title: Num Field Sum Chart
       description: Sum up any numeric value like story points in project and output monthly report on dashboard.
-      thumbnail: https://developer.atlassian.com/platform/forge/images/icons/issue-panel-icon.svg
+      thumbnail: https://imahiro-t.github.io/num-field-sum-chart/line-chart.png
       resource: main-resource
       render: native
       resolver:
